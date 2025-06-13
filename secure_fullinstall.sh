@@ -1,51 +1,50 @@
 #!/bin/bash
-set -e
 
-echo "=========================================="
-echo "  Pterodactyl Installer By Vendetta Ryuu"
-echo "=========================================="
+clear
+echo "==============================="
+echo " Pterodactyl Auto Installer By Vendetta Ryuu"
+echo "==============================="
 echo "[0] Install Pterodactyl Panel (pakai SSL)"
 echo "[1] Install Pterodactyl Wings"
 echo "[x] Exit"
-echo "------------------------------------------"
-read -p "Pilih opsi [0/1/x]: " pilihan
+echo "==============================="
+read -rp "Pilih opsi [0/1/x]: " opsi
 
-if [[ "$pilihan" == "0" ]]; then
-  # PANEL INSTALL
-  read -p "Masukkan subdomain Panel (contoh: panel.vendetta.my.id): " PANEL_DOMAIN
-  read -p "Admin Email: " ADMIN_EMAIL
-  read -p "Admin Username: " ADMIN_USER
-  read -p "Admin Password: " ADMIN_PASS
-
-  echo "[*] Menginstall Panel di https://$PANEL_DOMAIN ..."
-  bash <(curl -s https://pterodactyl-installer.se/installers/panel.sh) \
-    --fqdn "$PANEL_DOMAIN" \
-    --email "$ADMIN_EMAIL" \
-    --username "$ADMIN_USER" \
-    --firstname "$ADMIN_USER" \
-    --lastname "$ADMIN_USER" \
-    --password "$ADMIN_PASS" \
-    --ssl true \
-    --wings false
-
-elif [[ "$pilihan" == "1" ]]; then
-  # WINGS INSTALL
-  read -p "Masukkan subdomain Node (contoh: node.vendetta.my.id): " NODE_DOMAIN
-  read -p "Masukkan subdomain Panel (contoh: panel.vendetta.my.id): " PANEL_SUB
-  read -p "Masukkan Token Node (dari Panel): " NODE_TOKEN
-
-  PANEL_URL="https://$PANEL_SUB"
-
-  echo "[*] Menginstall Wings untuk $NODE_DOMAIN ..."
-  bash <(curl -s https://pterodactyl-installer.se/installers/wings.sh) \
-    --fqdn "$NODE_DOMAIN" \
-    --panel-url "$PANEL_URL" \
-    --token "$NODE_TOKEN"
-
-elif [[ "$pilihan" =~ ^(x|X)$ ]]; then
-  echo "Keluar. Terima kasih!"
+if [[ $opsi =~ ^[xX]$ ]]; then
+  echo "Keluar..."
   exit 0
+fi
+
+read -rp "Masukkan subdomain (contoh: panel.vendetta.my.id): " SUBDOMAIN
+read -rp "Admin Email: " EMAIL
+read -rp "Admin Username: " USERNAME
+read -rp "Admin Password: " PASSWORD
+
+if [[ $opsi == "0" ]]; then
+  echo "[*] Memulai instalasi Panel di https://$SUBDOMAIN ..."
+  curl -sSL https://raw.githubusercontent.com/pterodactyl/installer/master/install.sh | bash -s -- \
+    --email "$EMAIL" \
+    --username "$USERNAME" \
+    --password "$PASSWORD" \
+    --hostname "$SUBDOMAIN"
+
+elif [[ $opsi == "1" ]]; then
+  echo "[*] Memulai instalasi Wings..."
+  apt update && apt install -y curl jq
+
+  id -u pterodactyl &>/dev/null || useradd -m -d /etc/pterodactyl -s /bin/false pterodactyl
+
+  mkdir -p /etc/pterodactyl
+  curl -L https://github.com/pterodactyl/wings/releases/latest/download/wings_linux_amd64 \
+    -o /usr/local/bin/wings && chmod +x /usr/local/bin/wings
+
+  echo "[✓] Wings berhasil diinstall. Berikut langkah selanjutnya:"
+  echo "  1) Login ke Panel"
+  echo "  2) Tambah Node di Panel"
+  echo "  3) Salin konfigurasi Wings → paste ke /etc/pterodactyl/config.yml"
+  echo "  4) Jalankan Wings: systemctl enable --now wings"
+
 else
-  echo "Pilihan tidak valid."
+  echo "[!] Pilihan tidak valid."
   exit 1
 fi
